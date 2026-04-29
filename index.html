@@ -2,76 +2,336 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>车厘子溯源档案</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>高原有机车厘子·全链路溯源档案</title>
+  <!-- Chart.js 核心库 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #f5f5f5; margin:0; padding:20px; }
-    .box { max-width:500px; margin:0 auto; background:white; border-radius:20px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-    .head { background:#2d5a27; color:white; padding:20px; text-align:center; }
-    .part { padding:15px 20px; border-bottom:1px solid #eee; }
-    table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-    th,td { border:1px solid #ddd; padding:6px; }
-    th { background:#f0f7ee; }
-    .farm { background:#f8fbf5; padding:12px; border-radius:10px; border-left:4px solid #2d5a27; }
-    canvas { width:100% !important; height:auto !important; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; background: #f0f4f3; color: #2e3b2c; padding: 20px 15px 40px; }
+    .container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); overflow: hidden; }
+
+    /* 头部 */
+    .hero { background: linear-gradient(135deg, #1f3d1a 0%, #3a6140 100%); color: white; padding: 25px 20px; text-align: center; position: relative; overflow: hidden; }
+    .hero::after { content: ''; position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+    .hero h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
+    .hero .subtitle { font-size: 0.95rem; opacity: 0.9; margin-bottom: 4px; }
+    .hero .batch { font-size: 0.8rem; background: rgba(255,255,255,0.2); display: inline-block; padding: 4px 14px; border-radius: 20px; margin-top: 6px; }
+
+    /* 指标卡片三列 */
+    .kpi-row { display: flex; padding: 15px 15px 5px; gap: 12px; }
+    .kpi-card { flex: 1; background: #f7f9f7; border-radius: 14px; padding: 12px 8px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .kpi-card .value { font-size: 1.6rem; font-weight: 700; color: #2d5a27; }
+    .kpi-card .label { font-size: 0.7rem; color: #666; margin-top: 4px; }
+
+    /* 内容块 */
+    .section { padding: 18px 18px; border-bottom: 1px solid #eee; }
+    .section:last-child { border-bottom: none; }
+    .section h2 { font-size: 1.2rem; font-weight: 600; color: #2d5a27; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+
+    .chart-box { position: relative; width: 100%; margin: 8px 0 12px; }
+    .chart-box canvas { width: 100% !important; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 8px 0 12px; }
+    th { background: #eef5ea; color: #1e4520; padding: 8px 6px; text-align: left; font-weight: 600; }
+    td { padding: 7px 6px; border-bottom: 1px solid #eee; }
+    .pass { color: #2d5a27; font-weight: 600; }
+
+    .timeline { position: relative; padding-left: 20px; border-left: 2px solid #c3d7c3; margin: 10px 0; }
+    .timeline-item { margin-bottom: 14px; position: relative; }
+    .timeline-item::before { content: ''; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; background: #2d5a27; border-radius: 50%; border: 2px solid white; }
+    .timeline-item .date { font-size: 0.75rem; color: #777; }
+    .timeline-item .desc { font-size: 0.9rem; margin-top: 2px; }
+
+    .map-svg { width: 100%; background: #f5faf5; border-radius: 12px; padding: 8px; margin: 8px 0; }
+
+    .footer-note { padding: 15px 20px; background: #f9f9f9; text-align: center; font-size: 0.75rem; color: #aaa; border-top: 1px solid #eee; }
+
+    /* 折叠面板 */
+    .accordion { background: #f7f9f7; border-radius: 12px; margin: 8px 0; overflow: hidden; }
+    .accordion-header { padding: 12px 15px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; background: #eef5ea; cursor: pointer; }
+    .accordion-body { padding: 12px 15px; display: none; }
+    .accordion.open .accordion-body { display: block; }
+
+    @media (max-width: 400px) {
+      .hero h1 { font-size: 1.5rem; }
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <div class="head">
-      <h2>🍒 高原有机车厘子</h2>
-      <p>批次 BN20260415-001 | 2kg</p>
-    </div>
-    <div class="part">
-      <h3>🌡️ 温控曲线（0~4℃）</h3>
-      <canvas id="tempChart" width="400" height="200"></canvas>
-      <p style="color:#666;">✅ 全程温度在安全区间，未脱冷</p>
-    </div>
-    <div class="part">
-      <h3>📋 质检报告</h3>
-      <table>
-        <tr><th>项目</th><th>标准</th><th>结果</th><th>判定</th></tr>
-        <tr><td>多菌灵</td><td>≤0.5 mg/kg</td><td>0.08</td><td>✔合格</td></tr>
-        <tr><td>铅</td><td>≤0.1 mg/kg</td><td>0.02</td><td>✔合格</td></tr>
-        <tr><td>糖度</td><td>≥16°Bx</td><td>18.5</td><td>⭐优级</td></tr>
-        <tr><td>硬度</td><td>≥300 g/cm²</td><td>338</td><td>✔合格</td></tr>
-      </table>
-      <p style="font-size:0.8rem;">检测机构：理县农产品检测中心 | 报告编号 QC-001</p>
-    </div>
-    <div class="part">
-      <h3>🏔️ 溯源农场</h3>
-      <div class="farm">
-        <strong>雪山阳光农场</strong><br>
-        📍四川阿坝理县米亚罗镇<br>
-        🌱露天种植，雪山融水灌溉<br>
-        🧑‍🌾农场主：陈明
-      </div>
-    </div>
-    <div class="part" style="text-align:center;color:#999;font-size:0.8rem;">
-      教学模拟数据，仅供课堂演示
+<div class="container">
+  <!-- 头部 -->
+  <div class="hero">
+    <h1>🍒 高原有机车厘子</h1>
+    <div class="subtitle">全链路溯源档案 · 品质透明</div>
+    <div class="batch">批次 BN20260415-001 | 2kg 礼盒装</div>
+  </div>
+
+  <!-- 关键指标卡片 -->
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="value">98.5</div><div class="label">新鲜度评分</div></div>
+    <div class="kpi-card"><div class="value">18.5°</div><div class="label">平均糖度</div></div>
+    <div class="kpi-card"><div class="value">4h</div><div class="label">从枝头到冷库</div></div>
+  </div>
+
+  <!-- 1. 温控曲线详细版 -->
+  <div class="section">
+    <h2>🌡️ 全程温控监测（72小时）</h2>
+    <div class="chart-box"><canvas id="tempChart" height="200"></canvas></div>
+    <p style="font-size:0.85rem; color:#555;">✅ 全程温度 0.5℃ ~ 3.9℃，严格在 0~4℃ 安全区间，未发生任何脱冷事件。</p>
+    <div style="margin-top:8px; font-size:0.8rem; background:#f0f8f0; padding:8px 12px; border-radius:8px;">
+      <strong>异常预警：</strong>无<br>
+      <strong>最高温：</strong>3.9℃ (4月16日 10:30 装机转运)<br>
+      <strong>最低温：</strong>0.5℃ (4月15日 20:00 预冷结束)
     </div>
   </div>
-  <script>
-    const ctx = document.getElementById('tempChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['08:00','12:00','18:00','00:00','06:00','12:00','18:00'],
-        datasets: [{
-          label: '温度 °C',
-          data: [2.5, 1.8, 0.9, 3.2, 2.1, 3.0, 2.0],
-          borderColor: '#2d5a27',
-          backgroundColor: 'rgba(45,90,39,0.1)',
-          fill: true,
-          tension: 0.3
-        }]
+
+  <!-- 2. 质检报告 + 雷达图 -->
+  <div class="section">
+    <h2>📋 质检报告 & 感官雷达图</h2>
+    <!-- 表格数据 -->
+    <table>
+      <tr><th>检测项目</th><th>标准值</th><th>实测值</th><th>判定</th></tr>
+      <tr><td>多菌灵残留</td><td>≤0.5 mg/kg</td><td>0.08</td><td class="pass">✔ 合格</td></tr>
+      <tr><td>啶虫脒残留</td><td>≤0.2 mg/kg</td><td>0.03</td><td class="pass">✔ 合格</td></tr>
+      <tr><td>铅 (Pb)</td><td>≤0.1 mg/kg</td><td>0.02</td><td class="pass">✔ 合格</td></tr>
+      <tr><td>镉 (Cd)</td><td>≤0.05 mg/kg</td><td>0.005</td><td class="pass">✔ 合格</td></tr>
+      <tr><td>大肠菌群</td><td>不得检出</td><td>未检出</td><td class="pass">✔ 合格</td></tr>
+      <tr><td>包装迁移物</td><td>≤10 mg/dm²</td><td>2.3</td><td class="pass">✔ 合格</td></tr>
+    </table>
+    <div class="chart-box"><canvas id="radarChart" height="200"></canvas></div>
+    <p style="font-size:0.8rem; color:#777;">检测机构：理县农产品质量安全检测中心 | 报告编号 QC-20260415-042</p>
+  </div>
+
+  <!-- 3. 农场环境数据 -->
+  <div class="section">
+    <h2>🌤️ 种植环境监测（采摘前一周）</h2>
+    <div class="chart-box"><canvas id="envChart" height="160"></canvas></div>
+    <div style="display:flex; gap:8px; margin-top:8px; font-size:0.8rem;">
+      <div style="flex:1; background:#f0f7ee; padding:8px; border-radius:8px;"><strong>平均气温</strong><br>18.2℃</div>
+      <div style="flex:1; background:#f0f7ee; padding:8px; border-radius:8px;"><strong>平均湿度</strong><br>62%</div>
+      <div style="flex:1; background:#f0f7ee; padding:8px; border-radius:8px;"><strong>日照时长</strong><br>8.3h/天</div>
+    </div>
+  </div>
+
+  <!-- 4. 农事操作时间线 -->
+  <div class="section">
+    <h2>🌱 农事记录</h2>
+    <div class="timeline">
+      <div class="timeline-item"><div class="date">2026年3月1日</div><div class="desc">施基肥：腐熟羊粪 + 生物菌肥</div></div>
+      <div class="timeline-item"><div class="date">3月20日</div><div class="desc">生物防虫：释放赤眼蜂，悬挂黄板</div></div>
+      <div class="timeline-item"><div class="date">4月5日</div><div class="desc">疏花疏果，保留健壮果序</div></div>
+      <div class="timeline-item"><div class="date">4月10日</div><div class="desc">果实套袋，避免农药漂移</div></div>
+      <div class="timeline-item"><div class="date">4月15日 06:00</div><div class="desc">清晨手工采摘，精选成熟度 8 成以上</div></div>
+      <div class="timeline-item"><div class="date">4月15日 07:30</div><div class="desc">预冷处理：2 小时内中心温度降至 2.5℃</div></div>
+    </div>
+  </div>
+
+  <!-- 5. 运输轨迹模拟 -->
+  <div class="section">
+    <h2>🚚 冷链运输轨迹</h2>
+    <svg class="map-svg" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="100" fill="#f5faf5" rx="6"/>
+      <line x1="30" y1="80" x2="370" y2="80" stroke="#ccc" stroke-width="2" stroke-dasharray="4"/>
+      <!-- 节点1 农场 -->
+      <circle cx="30" cy="80" r="8" fill="#2d5a27" stroke="white" stroke-width="2"/>
+      <text x="30" y="65" text-anchor="middle" fill="#2d5a27" font-size="9">农场</text>
+      <text x="30" y="95" text-anchor="middle" fill="#666" font-size="8">4/15 08:00</text>
+      <!-- 节点2 冷库 -->
+      <circle cx="120" cy="80" r="8" fill="#2d5a27" stroke="white" stroke-width="2"/>
+      <text x="120" y="65" text-anchor="middle" fill="#2d5a27" font-size="9">县冷库</text>
+      <text x="120" y="95" text-anchor="middle" fill="#666" font-size="8">4/15 12:00</text>
+      <!-- 节点3 机场 -->
+      <circle cx="220" cy="80" r="8" fill="#2d5a27" stroke="white" stroke-width="2"/>
+      <text x="220" y="65" text-anchor="middle" fill="#2d5a27" font-size="9">成都机场</text>
+      <text x="220" y="95" text-anchor="middle" fill="#666" font-size="8">4/16 05:00</text>
+      <!-- 节点4 目的地仓库 -->
+      <circle cx="320" cy="80" r="8" fill="#2d5a27" stroke="white" stroke-width="2"/>
+      <text x="320" y="65" text-anchor="middle" fill="#2d5a27" font-size="9">上海冷仓</text>
+      <text x="320" y="95" text-anchor="middle" fill="#666" font-size="8">4/16 14:00</text>
+      <!-- 节点5 用户 -->
+      <circle cx="370" cy="80" r="8" fill="#e66a2c" stroke="white" stroke-width="2"/>
+      <text x="370" y="65" text-anchor="middle" fill="#e66a2c" font-size="9">签收</text>
+      <text x="370" y="95" text-anchor="middle" fill="#666" font-size="8">4/16 18:00</text>
+    </svg>
+    <p style="font-size:0.8rem; color:#555;">运输方式：冷库中转 + 全货机空运 + 冷链城配，全程 RFID 温度标签记录</p>
+  </div>
+
+  <!-- 6. 营养成分与品质分析 -->
+  <div class="section">
+    <h2>🍒 营养与品质分析</h2>
+    <div class="chart-box"><canvas id="nutritionChart" height="180"></canvas></div>
+    <div style="display:flex; gap:8px; margin-top:10px; font-size:0.8rem;">
+      <div style="flex:1; background:#fdf5f2; padding:8px; border-radius:8px; text-align:center;"><strong>维生素C</strong><br>12 mg/100g</div>
+      <div style="flex:1; background:#fdf5f2; padding:8px; border-radius:8px; text-align:center;"><strong>花青素</strong><br> 58 mg/100g</div>
+      <div style="flex:1; background:#fdf5f2; padding:8px; border-radius:8px; text-align:center;"><strong>膳食纤维</strong><br> 2.1 g/100g</div>
+    </div>
+  </div>
+
+  <!-- 7. 用户反馈与销售数据（模拟） -->
+  <div class="section">
+    <h2>⭐ 消费者反馈（本批次抽样）</h2>
+    <div style="display:flex; gap:10px; text-align:center;">
+      <div style="flex:1;"><span style="font-size:1.8rem; font-weight:700;">4.9</span><br><span style="font-size:0.8rem;">口感评分</span></div>
+      <div style="flex:1;"><span style="font-size:1.8rem; font-weight:700;">98%</span><br><span style="font-size:0.8rem;">好评率</span></div>
+      <div style="flex:1;"><span style="font-size:1.8rem; font-weight:700;">3200+</span><br><span style="font-size:0.8rem;">累计销量</span></div>
+    </div>
+  </div>
+
+  <!-- 底部分声明 -->
+  <div class="footer-note">
+    本页面数据均为教学模拟数据，仅供《电子商务物流信息管理》课堂实训使用<br>
+    设计时间：2026年4月 · 冷链溯源技术展示
+  </div>
+</div>
+
+<script>
+  // ---- 1. 温控曲线（密集数据点） ----
+  const tempCtx = document.getElementById('tempChart').getContext('2d');
+  new Chart(tempCtx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length: 73}, (_, i) => {
+        let d = new Date(2026, 3, 15, 6, 0); d.setHours(d.getHours() + i);
+        return d.toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      }),
+      datasets: [{
+        label: '实测温度',
+        data: (() => {
+          let arr = [];
+          for (let i=0; i<73; i++) {
+            let base = 1.8 + 0.8 * Math.sin(i/4) + 0.3*Math.random();
+            // 模拟采摘初期、预冷、运输波动
+            if (i>55) base += 0.5; // 装机回升
+            arr.push(Math.round((Math.max(0.5, Math.min(3.9, base))) * 10) / 10);
+          }
+          return arr;
+        })(),
+        borderColor: '#2d5a27',
+        backgroundColor: 'rgba(45,90,39,0.08)',
+        fill: true,
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 1.8
+      }, {
+        label: '安全上限 4℃',
+        data: Array(73).fill(4),
+        borderColor: '#d32f2f',
+        borderWidth: 1.2,
+        borderDash: [5,3],
+        pointRadius: 0,
+        fill: false
+      }, {
+        label: '安全下限 0℃',
+        data: Array(73).fill(0),
+        borderColor: '#1565c0',
+        borderWidth: 1.2,
+        borderDash: [5,3],
+        pointRadius: 0,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: { mode: 'index' }
       },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: { y: { min: -1, max: 6, ticks: { callback: v => v+'℃' } } }
+      scales: {
+        x: { ticks: { maxTicksLimit: 10, font: { size: 8 } } },
+        y: { min: -1, max: 6, ticks: { stepSize: 1, callback: v => v+'℃' } }
       }
+    }
+  });
+
+  // ---- 2. 质检雷达图 ----
+  const radarCtx = document.getElementById('radarChart').getContext('2d');
+  new Chart(radarCtx, {
+    type: 'radar',
+    data: {
+      labels: ['新鲜度', '甜度', '酸度', '硬度', '色泽', '水分'],
+      datasets: [{
+        label: '本批次实测',
+        data: [95, 88, 75, 85, 92, 90],
+        backgroundColor: 'rgba(45,90,39,0.2)',
+        borderColor: '#2d5a27',
+        pointBackgroundColor: '#2d5a27',
+        borderWidth: 1.5
+      }, {
+        label: '行业基准',
+        data: [80, 75, 70, 70, 80, 80],
+        backgroundColor: 'rgba(180,180,180,0.1)',
+        borderColor: '#aaa',
+        borderDash: [3,3],
+        pointBackgroundColor: '#aaa',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth:10, font:{size:10} } } },
+      scales: { r: { min: 60, max: 100, ticks: { stepSize: 10, display: false } } }
+    }
+  });
+
+  // ---- 3. 农场环境数据（采摘前7天温度和湿度） ----
+  const envCtx = document.getElementById('envChart').getContext('2d');
+  new Chart(envCtx, {
+    type: 'bar',
+    data: {
+      labels: ['4/8','4/9','4/10','4/11','4/12','4/13','4/14'],
+      datasets: [{
+        label: '最高温 ℃',
+        data: [22, 24, 21, 19, 22, 25, 23],
+        backgroundColor: '#eb8c55',
+        borderRadius: 4
+      }, {
+        label: '最低温 ℃',
+        data: [9, 11, 10, 8, 9, 12, 10],
+        backgroundColor: '#6c9e6c',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth:10, font:{size:9} } } },
+      scales: { y: { beginAtZero: true, max: 30, ticks: { stepSize:5 } } }
+    }
+  });
+
+  // ---- 4. 营养成分环形图 ----
+  const nutCtx = document.getElementById('nutritionChart').getContext('2d');
+  new Chart(nutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['碳水化合物', '蛋白质', '脂肪', '纤维', '其他'],
+      datasets: [{
+        data: [16.3, 1.1, 0.2, 2.1, 80.3],
+        backgroundColor: ['#a3c9a3','#6d9b6d','#e2c49f','#cfe2cf','#f0f0f0'],
+        borderColor: 'white',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth:8, font:{size:9} } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.raw + ' g/100g' } }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // ---- 折叠面板交互（供可能的扩展使用） ----
+  document.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.parentElement.classList.toggle('open');
     });
-  </script>
+  });
+</script>
 </body>
 </html>
